@@ -2,54 +2,85 @@ using UnityEngine;
 
 public class BallController : MonoBehaviour
 {
-    //[SerializeField] private float _minSpeed = 2.0f;
-    [SerializeField] private float _maxSpeed = 8.0f;
+    [SerializeField] private float _minSpeed = 5.0f;
+    [SerializeField] private float _maxSpeed = 20.0f;
+    [SerializeField] private LineRenderer _lineRenderer;
 
     private float _drag = 10f;
     private Vector3 _shotDirection = Vector3.zero;
-    private float _currentSpeed = 0f;
+    private float _shotPower = 5.0f;
     private bool _shot = false;
 
-    // Update is called once per frame
-    void Update()
+    private PanZoom _panZoom;
+
+    private void Start()
+    {
+        _panZoom = Camera.main.GetComponent<PanZoom>();
+        Camera.main.transform.position = new Vector3(transform.position.x, transform.position.y, Camera.main.transform.position.z);
+    }
+
+    private void Update()
     {
         if (_shot)
         {
-            transform.position += _shotDirection * _currentSpeed * Time.deltaTime;
+            transform.position += _shotDirection * _shotPower * Time.deltaTime;
+            Camera.main.transform.position = new Vector3(transform.position.x, transform.position.y, Camera.main.transform.position.z);
         }
 
-        if (_currentSpeed > 0f)
+        if (_shotPower > 0f)
         {
-            _currentSpeed = Mathf.MoveTowards(_currentSpeed, 0f, _drag * Time.deltaTime);
+            _shotPower = Mathf.MoveTowards(_shotPower, 0f, _drag * Time.deltaTime);
 
-            if (_currentSpeed <= 0f)
+            if (_shotPower <= 0f)
             {
-                _currentSpeed = 0f;
+                _shotPower = 0f;
                 _shot = false;
+                _panZoom.enabled = true;
             }
         }
     }
 
-    void OnMouseUp()
+    private void OnMouseDrag()
     {
         if (!_shot)
         {
             if (Input.touchCount > 0)
             {
+                _panZoom.enabled = false;
+
                 Touch touch = Input.GetTouch(0);
                 Vector3 pos = Camera.main.ScreenToWorldPoint(touch.position);
 
                 _shotDirection = transform.position - pos;
                 _shotDirection.z = 0f;
-                _shotDirection.Normalize();
 
-                _currentSpeed = _maxSpeed;
-                _shot = true;
+                _shotPower = Mathf.Clamp(_shotDirection.magnitude * _minSpeed, _minSpeed, _maxSpeed);
+
+                _lineRenderer.positionCount = 2;
+                Vector3 newPoint = transform.position + _shotDirection;
+                _lineRenderer.SetPositions(new Vector3[2] {
+                    transform.position,
+                    newPoint
+                });
+
+                _shotDirection.Normalize();
             }
         }
     }
 
-    void OnTriggerEnter2D(Collider2D collision)
+    private void OnMouseUp()
+    {
+        if (!_shot)
+        {
+            if (Input.touchCount > 0)
+            {
+                _shot = true;
+                _lineRenderer.positionCount = 0;
+            }
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("Boundry"))
         {
