@@ -9,6 +9,7 @@ public class BallController : MonoBehaviour
     private float _drag = 10f;
     private Vector3 _shotDirection = Vector3.zero;
     private float _shotPower = 5.0f;
+    private bool _canShot = false;
     private bool _shot = false;
 
     private PanZoom _panZoom;
@@ -54,16 +55,26 @@ public class BallController : MonoBehaviour
                 _shotDirection = transform.position - pos;
                 _shotDirection.z = 0f;
 
-                _shotPower = Mathf.Clamp(_shotDirection.magnitude * _minSpeed, _minSpeed, _maxSpeed);
+                if (_shotDirection.magnitude > 0.5f)
+                {
+                    _shotPower = Mathf.Clamp(_shotDirection.magnitude * _minSpeed, _minSpeed, _maxSpeed);
 
-                _lineRenderer.positionCount = 2;
-                Vector3 newPoint = transform.position + _shotDirection;
-                _lineRenderer.SetPositions(new Vector3[2] {
-                    transform.position,
-                    newPoint
-                });
+                    _lineRenderer.positionCount = 2;
+                    Vector3 newPoint = transform.position + _shotDirection;
+                    _lineRenderer.SetPositions(new Vector3[2] {
+                        transform.position,
+                        newPoint
+                    });
 
-                _shotDirection.Normalize();
+                    _shotDirection.Normalize();
+
+                    _canShot = true;
+                }
+                else
+                {
+                    _lineRenderer.positionCount = 0;
+                    _canShot = false;
+                }
             }
         }
     }
@@ -72,10 +83,14 @@ public class BallController : MonoBehaviour
     {
         if (!_shot)
         {
-            if (Input.touchCount > 0)
+            if (Input.touchCount > 0 && _canShot)
             {
                 _shot = true;
                 _lineRenderer.positionCount = 0;
+            }
+            else
+            {
+                _panZoom.enabled = true;
             }
         }
     }

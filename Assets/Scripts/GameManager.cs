@@ -11,6 +11,8 @@ public class GameManager : MonoBehaviour
     private BallController _ballController;
     private PanZoom _panZoom;
 
+    private int _levelBuildOffset = 1;
+
     private void Start()
     {
         DisableUI();
@@ -20,12 +22,24 @@ public class GameManager : MonoBehaviour
         if (_player != null)
         {
             _ballController = _player.GetComponent<BallController>();
+
+            Goal.scoreDelegate += EndLevel;
         }
+    }
+
+    private void OnDisable()
+    {
+        Goal.scoreDelegate -= EndLevel;
     }
 
     public void GoToHome()
     {
         LoadLevel(0);
+    }
+
+    public void GoToLevelSelect()
+    {
+        LoadLevel(1);
     }
 
     public void RestartLevel()
@@ -38,9 +52,25 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(index);
     }
 
+    public void LoadLevel(string levelName)
+    {
+        SceneManager.LoadScene(levelName);
+    }
+
     public void LoadNextLevel()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+    }
+
+    public void EndLevel()
+    {
+        EnableUI(false);
+
+        int levelNumber = SceneManager.GetActiveScene().buildIndex - _levelBuildOffset;
+        if (!GameState.IsLevelComplete(levelNumber))
+        {
+            GameState.SetLevelComplete(levelNumber);
+        }
     }
 
     public void EnableUI(bool isPause)
